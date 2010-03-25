@@ -5,33 +5,57 @@
  */
 
 //how fast should the triangles be spawned
-int interval = 60;
+int interval = 20;
 //the amount of triangles
-int NUM = 30;
+int NUM;
 //the amount of values which are used for the avergae of speed
 int speedNum = 10;
 //distance to the newly generated vector of the triangle (size of triangles)
-int distance = 100;
+int distance = 20;
 //size of the area at distance where the new point gets randomly generated in
 int s = 15;
 //how strong heading the triangles to the mouseposition
 int magnet = 8;
+//
+int counterStep = 10;
 
 long previousMillis = 0;
-Triangles[] myTriangles = new Triangles[NUM];
+
 float x,y,dx,dy;
 boolean test = false;
+Triangles[] myTriangles;
 float[] speedArray = new float[speedNum];
 int a = 0;
 int b = 0;
-boolean update = true;
-boolean debug = false;
+boolean update = false;
+boolean debug = true;
+boolean capture = false;
+
+int frameCounter = 0;
+
+import geomerative.*;
+
+RShape shp;
+RPoint[] pnts;
+
+int pntCounter = 1;
 
 void setup() {
   size(1280, 720, P2D);
+  RG.init(this);
   frameRate(30);
   textMode(SCREEN);
   smooth();
+  
+  shp = RG.loadShape("shuffle.svg");
+  shp = RG.centerIn(shp, g);
+  pnts = shp.getPoints();
+  NUM = floor(pnts.length/counterStep);
+  myTriangles = new Triangles[NUM];
+      for ( int i = 1; i < pnts.length; i++ )
+    {
+        println(i + ": " + pnts[i].x + ", " + pnts[i].y);
+    }
 }
 void update() {
     if (millis() - previousMillis > interval )//&& millis() > 5000)
@@ -72,6 +96,7 @@ void update() {
   dy = map(dy,0,720,1800/interval,0.1);
   
   //set the variance of x with mouseX
+  dy = height / 2 - mouseY;
   dx = width / 2 - mouseX;
 }
 
@@ -90,8 +115,6 @@ void draw() {
   }
   //lights();
   //translate(width / 2, height / 2);
-  //rotateY(map(mouseX, 0, width, 0, PI));
-  //rotateZ(map(mouseY, 0, height, 0, -PI));
   noStroke();
 
 
@@ -99,11 +122,14 @@ void draw() {
   pushMatrix();
   //FIXME aspect ratio
   //x = millis() / (12 * 0.6);
-  
+  //translate(0,0,-1000);
+  translate(width/2, height/2+50);
+  //translate(mouseX * 1.5, mouseY * 1.5);
+  //translate(width/2, height/2);
   if(update) {
   y = y + dy; 
   } 
-  translate(0,y);
+  //translate(0,y);
 
   if(!test) {
     for (int i = 0; i < a; i++) {
@@ -115,18 +141,34 @@ void draw() {
       myTriangles[i].drawtri();
     }
   }
+    
+    
+  if(debug) {
+    pushMatrix();
+    //translate(width/2, height/2,500);
+fill(255);
+ellipse(pnts[0].x, pnts[0].y, 5, 5);
+    for ( int i = 1; i < pnts.length; i++ )
+    {
+        line( pnts[i-1].x, pnts[i-1].y, pnts[i].x, pnts[i].y );
+        ellipse(pnts[i].x, pnts[i].y, 5, 5);
+    }
+      popMatrix();
+  }
 
-  popMatrix();
-
-  //saveFrame();
+popMatrix();
+  if(capture) {
+  saveFrame("screen-" + nf(frameCounter,6) + ".tif");
+  frameCounter++;
+  }
 
 }
 
 
 class Triangles {
 
-  PVector v1 = new PVector(width/2 - s, height/2);
-  PVector v2 = new PVector(width/2 + s,height/2);
+  PVector v1 = new PVector(pnts[0].x, pnts[0].y);
+  PVector v2 = new PVector(pnts[0].x + s,pnts[0].y + s);
   PVector v3 = new PVector(v1.x - distance + random(-s,s),v1.y - distance - random(s));
   PVector c = new PVector(random(255),random(255),random(255));
   PVector mid = new PVector(0,0);
@@ -139,9 +181,21 @@ class Triangles {
   }
 
   Triangles (PVector[] ancestor) {
+    if(pntCounter >= pnts.length) {
+      pntCounter = 0;
+    }
+    
+    
+    
     v1 = ancestor[0];
     v2 = ancestor[1];
-
+    
+    if(pntCounter == 0) {
+  v1 = new PVector(pnts[0].x, pnts[0].y);
+  v2 = new PVector(pnts[0].x + s,pnts[0].y + s);
+    }
+    
+    
     //calculate the vector to the middle between v1 and v2
     mid.set(v1);
     mid.add(v2);
@@ -162,16 +216,21 @@ class Triangles {
     }
     
     //calculate the difference from mouseX position to actual triangle position
-    dx = (mouseX - mid.x) * -magnet;
+
+    dx = pnts[pntCounter].x;
+    dy = pnts[pntCounter].y;
+
+    //dx = (mouseX - mid.x) * -magnet;
+    //dy = (mouseY - mid.y) * -magnet;
 
     //create the vector with the variance of dx so the triangles move in that direction
-    d = new PVector(xs - dx, ys);
+    d = new PVector(dx + random(-s,s), dy + random(-s,s));
 
     //limit the magnitude of the vector, so every vector has the same size
-    d.limit(distance);
+    //d.limit(distance);
 
     //add mid to distance
-    d.add(mid);
+    //d.add(mid);
 
 //        if(swi) {
 //        d.add(v2);
@@ -184,7 +243,14 @@ class Triangles {
 
     //create the third vector for the new triangle with the distance
     //and the s (size of the area where the new vector is randomly created) 
-    v3 = new PVector(d.x + random(-s,s),d.y + random(-s,s));  
+    //v3 = new PVector(dx,dy);
+    v3 = new PVector(d.x,d.y);
+    if(pntCounter >= pnts.length) {
+    v3 = new PVector(pnts[pntCounter-1].x + random(-s,s), pnts[pntCounter-1].y + random(-s,s));
+    }
+    //v3 = new PVector(d.x + random(-s,s),d.y + random(-s,s));  
+    
+        pntCounter = pntCounter + counterStep;
   }
 
   PVector getLastVector() {
@@ -195,18 +261,10 @@ class Triangles {
     PVector[] returnVector = new PVector[2]; 
     //return the two vectors for touching randomly
     //just return the two vectors from the new positions (which means including v3)
-    PVector len_1_3 = new PVector(v1.x - v3.x, v1.y - v3.y);
-    PVector len_2_3 = new PVector(v2.x - v3.x, v2.y - v3.y); 
-
-    //    println(swi);
-    //    if(mx >= 0) {
-    //            returnVector[0] = v1;
-    //      returnVector[1] = v3;
-    //      swi = false;
-    //    }else {
+    
+    
     returnVector[0] = v2;
     returnVector[1] = v3;
-    //}
 
     return returnVector;
   }
@@ -247,6 +305,15 @@ void keyPressed() {
       debug = true;
     }
   }
+  
+  if(key == 'c'){
+    if(capture) {
+      capture = false; 
+    } else {
+      capture = true;
+    }
+  }
+  
   
 }
 
