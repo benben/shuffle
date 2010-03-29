@@ -5,51 +5,66 @@
  */
 
 //how fast should the triangles be spawned
-int interval = 60;
+int interval = 20;
 //distance to the newly generated vector of the triangle (size of triangles)
 int distance = 1;
 //size of the area at distance where the new point gets randomly generated in
 int s = 20;
 //just take every [counterStep] point from the points array from the svg
-int counterStep = 10;
+int counterStep = 8;
+int moveStep = 2;
 
 
-Triangles[] myTriangles;
+int move = 0;
+int zoom = 0;
+
+Triangle[] myTriangles;
 int NUM;
 long previousMillis = 0;
+long prevFrames = 0;
 boolean test = false;
 boolean flip = true;
 
 //stuff for the svg
 import geomerative.*;
-RShape shp;
-RPoint[] pnts;
+RShape shp, shp2;
+RPoint[] pnts, cam;
 
 //my counter
 int a = 0;
 int frameCounter = 0;
-int pntCounter = 0;
+//first value is for first triangle so increase it and take the second step
+int pntCounter = counterStep;
 
 //my key bools
 boolean update = false;
 boolean debug = true;
 boolean capture = false;
+boolean moving = false;
+boolean finished = false;
+
+float dx, dy, dz, x, y, z;
 
 void setup() {
-  size(1280, 720, P2D);
+  size(1280, 720, P3D);
   frameRate(10);
   textMode(SCREEN);
-  smooth();
+  //smooth();
   
   //load the svg and make points from it
   RG.init(this);
   shp = RG.loadShape("shuffle.svg");
-  shp = RG.centerIn(shp, g);
+  shp2 = RG.loadShape("camera.svg");
+  shp.translate(-width/2,-height/2);
+  shp.scale(0.8);
+  shp2.translate(-width/2,-height/2);
+  shp2.scale(0.8);
   pnts = shp.getPoints();
+  cam = shp2.getPoints();
   
   //calculate the size of the array
-  NUM = floor(pnts.length/counterStep);
-  myTriangles = new Triangles[NUM];
+  NUM = ceil(pnts.length/counterStep)+1;
+  myTriangles = new Triangle[NUM];
   
   for ( int i = 1; i < pnts.length; i++ )
   {
@@ -57,25 +72,12 @@ void setup() {
   }
 }
 void update() {
-  if (millis() - previousMillis > interval )//&& millis() > 5000)
-  {
-    previousMillis = millis();
 
-    if (a < 1 && !test) {
-      //this happens just for the first creation
-      myTriangles[a] = new Triangles();
-    }
-    else {
-      //if there is one or more object, create one as successor
-      myTriangles[a] = new Triangles(myTriangles[getAncestor(a)].getVectors());
-    }
+  
+  if (millis() - previousMillis > interval )
+  { 
+    previousMillis = millis();
     
-    //counter through the triangle array
-    a++; 
-    if(a == NUM) { 
-      a = 0; 
-      test = true;
-    }
     
     //my variable for flipping
     if(flip) {
@@ -84,16 +86,56 @@ void update() {
     else {
       flip = true;
     }
-  }
+    
+    //just for looping
+    if(pntCounter >= pnts.length) {
+      pntCounter = 0;
+      update = false;
+      return;
+    }
+    
+    if (a < 1 && !test) {
+      //this happens just for the first creation
+      myTriangles[a] = new Triangle();
+      println("generating triangle 0");
+    }
+    else if(!finished) {
+      //if there is one or more object, create one as successor
+      myTriangles[a] = new Triangle(myTriangles[getAncestor(a)].getVectors());
+      println("generating triangle "+a);
+    }
+  
+  a++; 
+  
+      //counter through the triangle array
+    
+    if(a == NUM) { 
+      a = 0; 
+      test = true;
+    }
+  //increasing the counter for the next point from the svg
+  pntCounter = pntCounter + counterStep;
+  }  
 }
 
 void draw() {
-
   //just update everything
   if(update) {
-    update();
+    update(); 
+  }
+  
+  if(moving) {
+    move = move + moveStep;
+    if(move >= cam.length) {
+      println("finished!");
+      move = 0; 
+      finished = true;
+      update = false;
+      moving = false;
+    }
   }
 
+  
   background(0);
   
   if(debug) {
@@ -102,15 +144,35 @@ void draw() {
     line(0,360,1280,360);
     line(640,0,640,720);
     text((int)frameRate + " fps",10,20);
+    text("a: " + a + " / " + (NUM-1),10,35);
+    text("pntCounter: " + pntCounter + " / " + pnts.length,10,50);
+    text("move: " + move + " / " + cam.length,10,65);
+    text("update: " + update,10,80);
   }
   noStroke();
 
   // **** Draw *************************************
   pushMatrix();
-  //translate(0,0,-1000);
-  translate(width/2, height/2+50);
-  //translate(mouseX * 1.5, mouseY * 1.5);
-  //translate(width/2, height/2);
+ 
+ if(!debug) {
+   if(!finished) {
+     translate(width/2 - cam[move].x, height/2 - cam[move].y,580);
+     dx = width/2 - cam[move].x;
+     dy = height/2 - cam[move].y;
+     dz = 580;
+   } else {
+     x = map(zoom,0,20,dx,width/2-40);
+     y = map(zoom,0,20,dy,height/2- 20);
+     z = map(zoom,0,20,dz,0);
+     if(zoom <= 20) {
+       zoom++;
+     }
+     translate(x, y,z);   
+     //rotateY(map(mouseX, 0, width, 0, PI));
+   }
+ } else {
+   translate(width/2, height/2);
+  }
 
   if(!test) {
     for (int i = 0; i < a; i++) {
@@ -123,7 +185,7 @@ void draw() {
     }
   }
 
-  if(debug) {
+  if(debug) {  
     fill(255);
     ellipse(pnts[0].x, pnts[0].y, 5, 5);
     for ( int i = 1; i < pnts.length; i++ )
@@ -131,95 +193,22 @@ void draw() {
       line( pnts[i-1].x, pnts[i-1].y, pnts[i].x, pnts[i].y );
       ellipse(pnts[i].x, pnts[i].y, 5, 5);
     }
+    
+    fill(100,255,0);
+    ellipse(cam[0].x, cam[0].y, 3, 3);
+    for ( int i = 1; i < cam.length; i++ )
+    {
+      line( cam[i-1].x, cam[i-1].y, cam[i].x, cam[i].y );
+      ellipse(cam[i].x, cam[i].y, 3, 3);
+    }    
   }
   popMatrix();
 
   // **** Capture ****************************************
   if(capture) {
+    println("capturing frame " + frameCounter);
     saveFrame("screen-" + nf(frameCounter,6) + ".tif");
     frameCounter++;
-  }
-}
-
-
-class Triangles {
-
-  PVector v1 = new PVector(pnts[0].x, pnts[0].y);
-  PVector v2 = new PVector(pnts[0].x + s,pnts[0].y + s);
-  PVector v3 = new PVector(v1.x - distance + random(-s,s),v1.y - distance - random(s));
-  PVector c = new PVector(random(255),random(255),random(255));
-
-  Triangles () {
-  }
-
-  Triangles (PVector[] ancestor) {
-
-    //just for looping
-    if(pntCounter >= pnts.length) {
-      pntCounter = 0;
-    }
-
-    v1 = ancestor[0];
-    v2 = ancestor[1];
-
-    //if the pntCounter is zero, don't use the vector of ancestor, use the first point of the svg
-    if(pntCounter == 0) {
-      v1 = new PVector(pnts[0].x, pnts[0].y);
-      v2 = new PVector(pnts[0].x + s,pnts[0].y + s);
-    }
-
-    //create the vector with the variance of dx so the triangles move in that direction
-    if(flip) {
-      //take the coords from the actual point of the svg path, add the distance and a random value
-      v3 = new PVector(pnts[pntCounter].x + distance + random(s), pnts[pntCounter].y + distance + random(s));
-    } 
-    else {
-      v3 = new PVector(pnts[pntCounter].x - distance - random(s), pnts[pntCounter].y - distance - random(s));
-    }
-
-    //if the pntCounter is at the end v3 should use a point from the ancestor 
-    if(pntCounter >= pnts.length) {
-      v3 = new PVector(pnts[pntCounter-1].x + random(-s,s), pnts[pntCounter-1].y + random(-s,s));
-    }
-
-    //increasing the counter for the next point from the svg
-    pntCounter = pntCounter + counterStep;
-  }
-
-  PVector getLastVector() {
-    return v3;
-  }
-
-  PVector[] getVectors() {
-    PVector[] returnVector = new PVector[2]; 
-
-    //return alternating vector pairs
-    if(flip) {
-      returnVector[1] = v2;
-      returnVector[0] = v3;
-    } 
-    else {
-      returnVector[0] = v1;
-      returnVector[1] = v3;
-    }
-
-    return returnVector;
-  }
-
-  void drawtri() {  
-    beginShape(TRIANGLES);
-    fill(c.x, c.y, c.z);
-    vertex(v1.x, v1.y);
-    vertex(v2.x, v2.y);
-    vertex(v3.x, v3.y);
-    endShape();
-
-    if(debug) {
-      fill(255,255,255);
-      ellipse(v1.x,v1.y,10,10);
-      fill(0,255,0);
-      ellipse(v2.x,v2.y,10,10);
-    }
   }
 }
 
@@ -227,9 +216,13 @@ void keyPressed() {
   if(key == ' '){
     if(update) {
       update = false; 
+      capture = false;
+      moving = false;
     } 
     else {
       update = true;
+      moving = true;
+      finished = false;
     }
   }
 
@@ -251,12 +244,14 @@ void keyPressed() {
     }
   }
 
-  if(key == 'k'){
-    myTriangles = new Triangles[NUM];
-    a = 0;
-    pntCounter = 0;
-    update = false;
-  }
+//  if(key == 'k'){
+//    for (int i = 0; i < NUM; i++) {
+//      myTriangles[i].finalize();
+//    }
+//    a = 0;
+//    pntCounter = 0;
+//    update = false;
+//  }
 }
 
 int getAncestor(int i) {
