@@ -13,7 +13,6 @@ int a;
 long previousMillis = 0;
 Triangles[] myTriangles = new Triangles[NUM];
 float x,y;
-boolean test = false;
 
 void setup() {
   size(1280, 720, P2D);
@@ -28,7 +27,7 @@ void draw() {
     previousMillis = millis();
     
     //this is just for the first creation
-   if (a < 1 && !test) {
+   if (myTriangles[0] == null) {
       myTriangles[a] = new Triangles();
     }
     else {
@@ -37,8 +36,7 @@ void draw() {
     }    
     a++;
     if(a == NUM) { 
-      a = 0; 
-      test = true;
+      a = 0;
     }
   }
   
@@ -50,8 +48,8 @@ void draw() {
   x = millis() / (12 * 0.6);
   y = millis() / 12;  
   translate(-x,-y);
- 
-  if(!test) {
+
+  if(myTriangles[NUM-1] == null) {
     for (int i = 0; i < a; i++) {
       myTriangles[i].drawtri();
     }
