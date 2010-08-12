@@ -4,13 +4,20 @@
  * or send a letter to Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
  */
 
-//how fast will the triangles be spawned
-int interval = 500;
+//how many frames between spawning of triangles
+int interval = 15;
+//speed
+float speed = 2.8;
+//randomness 1
+float s = 50.0;
+//randomness 2
+float r = 50.0;
 //maximum amount of triangles
 int NUM = 50;
 
-int a;
-long previousMillis = 0;
+
+
+int count;
 Triangles[] myTriangles = new Triangles[NUM];
 float x,y,ratio;
 boolean flip;
@@ -24,21 +31,20 @@ void setup() {
 }
 
 void draw() {
-  if (frameCount % 5 == 0)
+  
+  if (frameCount % interval == 0)
   {
-    previousMillis = millis();
-    
-    //this is just for the first creation
+   //this is just for the first creation
    if (myTriangles[0] == null) {
-      myTriangles[a] = new Triangles();
+      myTriangles[count] = new Triangles();
     }
     else {
       //if there is one or more object, create one as successor     
-      myTriangles[a] = new Triangles(myTriangles[getAncestor(a)].getVectors());
+      myTriangles[count] = new Triangles(myTriangles[getAncestor(count)].getVectors());
     }    
-    a++;
-    if(a == NUM) { 
-      a = 0;
+    count++;
+    if(count == NUM) { 
+      count = 0;
     }
   }
   
@@ -47,12 +53,12 @@ void draw() {
   text((int)frameRate + " fps",10,20);
   noStroke();
   
-  x = frameCount*2.8*ratio;
-  y = frameCount*2.8;
+  x = frameCount*speed*ratio;
+  y = frameCount*speed;
   
   translate(-x,-y);
   if(myTriangles[NUM-1] == null) {
-    for (int i = 0; i < a; i++) {
+    for (int i = 0; i < count; i++) {
       myTriangles[i].drawtri();
     }
   }
@@ -64,10 +70,9 @@ void draw() {
 }
 
 class Triangles {
-  int s = 10;
   PVector v1 = new PVector(x+(width -100) + random(s),y+(height)+random(s));
   PVector v2 = new PVector(x+(width) + random(s),y+(height -100)+random(s));
-  PVector v3 = new PVector(x+(width -100) + random(s),y+(height)+random(s));
+  PVector v3 = v2;
   PVector c = new PVector(random(255),random(255),random(255));
 
   Triangles () {
@@ -77,9 +82,9 @@ class Triangles {
     v1 = ancestor[0];
     v2 = ancestor[1];
     if(flip) {
-      v3 = new PVector(x+(width -100) + random(s),y+(height)+random(s));
+      v3 = new PVector(x+(width - 100 - random(r)) + random(s),y+(height)+random(s));
     } else {
-      v3 = new PVector(x+(width) + random(s),y+(height -100)+random(s));
+      v3 = new PVector(x+(width) + random(s),y+(height - 100 - random(r))+random(s));
     }
   }
 
