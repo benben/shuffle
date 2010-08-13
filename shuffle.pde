@@ -13,7 +13,7 @@ float s = 50.0;
 //randomness 2
 float r = 50.0;
 //maximum amount of triangles
-int NUM = 50;
+int NUM = 20;
 
 
 
@@ -31,31 +31,28 @@ void setup() {
 }
 
 void draw() {
-  
+
   if (frameCount % interval == 0)
   {
-   //this is just for the first creation
-   if (myTriangles[0] == null) {
-      myTriangles[count] = new Triangles();
+    //this is just for the first creation
+    if (myTriangles[0] == null) {
+      myTriangles[0] = new Triangles();
     }
     else {
       //if there is one or more object, create one as successor     
-      myTriangles[count] = new Triangles(myTriangles[getAncestor(count)].getVectors());
-    }    
-    count++;
-    if(count == NUM) { 
-      count = 0;
+      myTriangles[count%NUM] = new Triangles(myTriangles[(count - 1)%NUM].getVectors());
     }
+    count++;
   }
-  
+
   background(0);
   fill(255, 255, 255);
   text((int)frameRate + " fps",10,20);
   noStroke();
-  
+
   x = frameCount*speed*ratio;
   y = frameCount*speed;
-  
+
   translate(-x,-y);
   if(myTriangles[NUM-1] == null) {
     for (int i = 0; i < count; i++) {
@@ -66,7 +63,7 @@ void draw() {
     for (int i = 0; i < NUM; i++) {
       myTriangles[i].drawtri();
     }
-  }    
+  }
 }
 
 class Triangles {
@@ -83,7 +80,8 @@ class Triangles {
     v2 = ancestor[1];
     if(flip) {
       v3 = new PVector(x+(width - 100 - random(r)) + random(s),y+(height)+random(s));
-    } else {
+    } 
+    else {
       v3 = new PVector(x+(width) + random(s),y+(height - 100 - random(r))+random(s));
     }
   }
@@ -100,7 +98,8 @@ class Triangles {
       returnVector[1] = v2;
       returnVector[0] = v3;
       flip = false;
-    } else {
+    } 
+    else {
       returnVector[0] = v1;
       returnVector[1] = v3;
       flip = true;
@@ -116,14 +115,5 @@ class Triangles {
     vertex(v2.x, v2.y);
     vertex(v3.x, v3.y);
     endShape();
-  }
-}
-
-int getAncestor(int i) {
-  if(i == 0) {
-    return NUM - 1;
-  }
-  else {
-    return i - 1;
   }
 }
