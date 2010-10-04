@@ -11,8 +11,8 @@ int distance = 1;
 //size of the area at distance where the new point gets randomly generated in
 int s = 20;
 //just take every [counterStep] point from the points array from the svg
-int counterStep = 8;
-int moveStep = 1;
+int counterStep = 6;
+int moveStep = 2;
 
 int count = 0;
 

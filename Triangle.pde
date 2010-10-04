@@ -3,7 +3,7 @@ class Triangle {
   PVector v1 = new PVector(pnts[0].x, pnts[0].y);
   PVector v2 = new PVector(pnts[0].x + s,pnts[0].y + s);
   PVector v3 = new PVector(pnts[counterStep].x - distance - random(s), pnts[counterStep].y - distance - random(s));
-  PVector c = new PVector(random(255),random(255),random(255));
+  int c = (int)random(255);
 
   Triangle () {
   }
@@ -52,7 +52,9 @@ class Triangle {
 
   void drawtri() {  
     beginShape(TRIANGLES);
-    fill(c.x, c.y, c.z);
+    colorMode(HSB);
+    fill(c,255,255);
+    colorMode(RGB);
     vertex(v1.x, v1.y);
     vertex(v2.x, v2.y);
     vertex(v3.x, v3.y);
