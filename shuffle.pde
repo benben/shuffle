@@ -5,14 +5,16 @@
  */
 
 //how fast should the triangles be spawned
-int interval = 20;
+int interval = 1;
 //distance to the newly generated vector of the triangle (size of triangles)
 int distance = 1;
 //size of the area at distance where the new point gets randomly generated in
 int s = 20;
 //just take every [counterStep] point from the points array from the svg
 int counterStep = 8;
-int moveStep = 2;
+int moveStep = 1;
+
+int count = 0;
 
 
 int move = 0;
@@ -47,9 +49,9 @@ float dx, dy, dz, x, y, z;
 
 void setup() {
   size(1280, 720, P3D);
-  frameRate(10);
+  frameRate(25);
   textMode(SCREEN);
-  //smooth();
+  smooth();
   
   //load the svg and make points from it
   RG.init(this);
@@ -74,11 +76,8 @@ void setup() {
 void update() {
 
   
-  if (millis() - previousMillis > interval )
-  { 
-    previousMillis = millis();
-    
-    
+  if (frameCount % interval == 0)
+  {   
     //my variable for flipping
     if(flip) {
       flip = false;
@@ -94,28 +93,21 @@ void update() {
       return;
     }
     
-    if (a < 1 && !test) {
+    if (count == 0) {
       //this happens just for the first creation
-      myTriangles[a] = new Triangle();
+      myTriangles[0] = new Triangle();
       println("generating triangle 0");
     }
     else if(!finished) {
       //if there is one or more object, create one as successor
-      myTriangles[a] = new Triangle(myTriangles[getAncestor(a)].getVectors());
-      println("generating triangle "+a);
+      myTriangles[count%NUM] = new Triangle(myTriangles[(count-1)%NUM].getVectors());
+      println("generating triangle " + count%NUM);
     }
   
-  a++; 
-  
-      //counter through the triangle array
-    
-    if(a == NUM) { 
-      a = 0; 
-      test = true;
-    }
   //increasing the counter for the next point from the svg
   pntCounter = pntCounter + counterStep;
-  }  
+  count++;
+  }
 }
 
 void draw() {
@@ -123,9 +115,14 @@ void draw() {
   if(update) {
     update(); 
   }
-  
+
   if(moving) {
+    
+        if (frameCount % interval == 0)
+  { 
     move = move + moveStep;
+  }
+    
     if(move >= cam.length) {
       println("finished!");
       move = 0; 
@@ -133,9 +130,8 @@ void draw() {
       update = false;
       moving = false;
     }
-  }
-
-  
+  } 
+    
   background(0);
   
   if(debug) {
@@ -144,10 +140,11 @@ void draw() {
     line(0,360,1280,360);
     line(640,0,640,720);
     text((int)frameRate + " fps",10,20);
-    text("a: " + a + " / " + (NUM-1),10,35);
+    text("count: " + count + " / " + (NUM-1),10,35);
     text("pntCounter: " + pntCounter + " / " + pnts.length,10,50);
     text("move: " + move + " / " + cam.length,10,65);
     text("update: " + update,10,80);
+    text("moving: " + moving,10,95);
   }
   noStroke();
 
@@ -175,7 +172,7 @@ void draw() {
   }
 
   if(!test) {
-    for (int i = 0; i < a; i++) {
+    for (int i = 0; i < count; i++) {
       myTriangles[i].drawtri();
     }
   }
@@ -223,6 +220,7 @@ void keyPressed() {
       update = true;
       moving = true;
       finished = false;
+      count = 0;
     }
   }
 
